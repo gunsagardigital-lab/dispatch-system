@@ -8,9 +8,23 @@ from streamlit_gsheets import GsheetsConnection
 # --- Page Config ---
 st.set_page_config(page_title="Dispatch System - Live Dashboard", page_icon="🚛", layout="wide")
 
-# --- Google Sheets Connection ---
-# Streamlit Cloud पर यह सीधे आपकी ऑनलाइन गूगल शीट से कनेक्ट हो जाएगा
-conn = st.connection("gsheets", type=GsheetsConnection)
+import streamlit as st
+import pandas as pd
+import requests
+
+# अपनी Google Sheet का एक्सपोर्ट वाला CSV लिंक यहाँ डालें
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1vcwF7y2xKXzC6sAfxbJn37co0aufYMKS/export?format=csv"
+
+@st.cache_data(ttl=10) # इससे डेटा तुरंत रिफ्रेश होता रहेगा
+def load_data():
+    df = pd.read_csv(SHEET_CSV_URL)
+    return df
+
+df = load_data()
+
+# अब आप अपनी टेबल या डेटा देख सकते हैं
+st.write("### Live Dispatch Data")
+st.dataframe(df)
 
 NOTICE_TXT_FILE = r"C:\Dispatch_System\notice.txt"
 
