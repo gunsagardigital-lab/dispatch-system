@@ -7,16 +7,30 @@ from datetime import datetime, timedelta
 # --- Page Config ---
 st.set_page_config(page_title="Dispatch System - Live Dashboard", page_icon="🚛", layout="wide")
 
-# अपनी Google Sheet का एक्सपोर्ट वाला CSV लिंक यहाँ सेट किया गया है
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1vcwF7y2xKXzC6sAfxbJn37co0aufYMKS/export?format=csv"
+# Google Sheet की बेस लिंक (बिना टैब के)
+SHEET_BASE_URL = "https://docs.google.com/spreadsheets/d/1vcwF7y2xKXzC6sAfxbJn37co0aufYMKS/export?format=csv"
+
+def get_shift_date():
+    now = datetime.now()
+    if now.hour < 6:
+        return (now - timedelta(days=1)).strftime("%d.%m.%Y")
+    return now.strftime("%d.%m.%Y")
 
 @st.cache_data(ttl=10) # इससे डेटा हर 10 सेकंड में ऑटोमैटिक रिफ्रेश होता रहेगा
-def load_data():
-    # header=2 का मतलब है कि शीट की तीसरी लाइन से हेडर (कॉलम के नाम) पढ़े जाएंगे
-    df = pd.read_csv(SHEET_CSV_URL, header=2)
+def load_data(sheet_name):
+    # sheet_name (तारीख) के हिसाब से डेटा फेच करेगा
+    url = f"{SHEET_BASE_URL}&sheet={sheet_name}"
+    try:
+        df = pd.read_csv(url, header=2)
+        if df.empty or len(df.columns) < 3:
+            # अगर उस तारीख का टैब न मिले तो डिफ़ॉल्ट ले लेगा
+            df = pd.read_csv(SHEET_BASE_URL, header=2)
+    except:
+        df = pd.read_csv(SHEET_BASE_URL, header=2)
     return df
 
-df = load_data()
+sheet_to_use = get_shift_date()
+df = load_data(sheet_to_use)
 
 NOTICE_TXT_FILE = r"C:\Dispatch_System\notice.txt"
 
@@ -56,12 +70,6 @@ def send_push_notification(vehicle_number, destination, program_no="", loading_p
         print("OneSignal Response:", response.status_code, response.text)
     except Exception as e:
         print("Notification Error:", e)
-
-def get_shift_date():
-    now = datetime.now()
-    if now.hour < 6:
-        return (now - timedelta(days=1)).strftime("%d.%m.%Y")
-    return now.strftime("%d.%m.%Y")
 
 def get_notice_from_txt():
     if os.path.exists(NOTICE_TXT_FILE):
@@ -295,8 +303,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-    sheet_to_use = get_shift_date()
-
     if not df.empty:
         df.columns = df.columns.astype(str).str.strip()
         
