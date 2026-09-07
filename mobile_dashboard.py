@@ -3,28 +3,20 @@ import pandas as pd
 import os
 import requests
 from datetime import datetime, timedelta
-from streamlit_gsheets import GsheetsConnection
 
 # --- Page Config ---
 st.set_page_config(page_title="Dispatch System - Live Dashboard", page_icon="🚛", layout="wide")
 
-import streamlit as st
-import pandas as pd
-import requests
-
-# अपनी Google Sheet का एक्सपोर्ट वाला CSV लिंक यहाँ डालें
+# अपनी Google Sheet का एक्सपोर्ट वाला CSV लिंक यहाँ सेट किया गया है
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1vcwF7y2xKXzC6sAfxbJn37co0aufYMKS/export?format=csv"
 
-@st.cache_data(ttl=10) # इससे डेटा तुरंत रिफ्रेश होता रहेगा
+@st.cache_data(ttl=10) # इससे डेटा हर 10 सेकंड में ऑटोमैटिक रिफ्रेश होता रहेगा
 def load_data():
-    df = pd.read_csv(SHEET_CSV_URL)
+    # header=2 का मतलब है कि शीट की तीसरी लाइन से हेडर (कॉलम के नाम) पढ़े जाएंगे
+    df = pd.read_csv(SHEET_CSV_URL, header=2)
     return df
 
 df = load_data()
-
-# अब आप अपनी टेबल या डेटा देख सकते हैं
-st.write("### Live Dispatch Data")
-st.dataframe(df)
 
 NOTICE_TXT_FILE = r"C:\Dispatch_System\notice.txt"
 
@@ -303,15 +295,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-    # Google Sheet से डेटा लोड करना (शीर्षक की तीसरी लाइन से हेडर पढ़ने के लिए header=2)
     sheet_to_use = get_shift_date()
-    
-    try:
-        df = conn.read(worksheet=sheet_to_use, header=2, ttl=0)
-    except:
-        # अगर आज की तारीख की शीट न मिले, तो पहली उपलब्ध शीट ले लेगा
-        df = conn.read(header=2, ttl=0)
-        sheet_to_use = "Default Sheet"
 
     if not df.empty:
         df.columns = df.columns.astype(str).str.strip()
