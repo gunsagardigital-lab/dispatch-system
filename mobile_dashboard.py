@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 # --- Page Config ---
 st.set_page_config(page_title="Dispatch System - Live Dashboard", page_icon="🚛", layout="wide")
 
-# Google Sheet की बेस लिंक (बिना टैब के)
+# Google Sheet की बेस लिंक
 SHEET_BASE_URL = "https://docs.google.com/spreadsheets/d/1vcwF7y2xKXzC6sAfxbJn37co0aufYMKS/export?format=csv"
 
 def get_shift_date():
@@ -16,20 +16,22 @@ def get_shift_date():
         return (now - timedelta(days=1)).strftime("%d.%m.%Y")
     return now.strftime("%d.%m.%Y")
 
+# आज की तारीख का टैब आटोमैटिक फेच करने का तरीका
+sheet_to_use = get_shift_date()
+
 @st.cache_data(ttl=10) # इससे डेटा हर 10 सेकंड में ऑटोमैटिक रिफ्रेश होता रहेगा
 def load_data(sheet_name):
-    # sheet_name (तारीख) के हिसाब से डेटा फेच करेगा
+    # सीधे आज की तारीख वाले टैब का नाम URL में जोड़ा गया है
     url = f"{SHEET_BASE_URL}&sheet={sheet_name}"
     try:
         df = pd.read_csv(url, header=2)
         if df.empty or len(df.columns) < 3:
-            # अगर उस तारीख का टैब न मिले तो डिफ़ॉल्ट ले लेगा
+            # अगर उस तारीख का टैब न मिले तो मास्टर या पहली शीट ले लेगा
             df = pd.read_csv(SHEET_BASE_URL, header=2)
     except:
         df = pd.read_csv(SHEET_BASE_URL, header=2)
     return df
 
-sheet_to_use = get_shift_date()
 df = load_data(sheet_to_use)
 
 NOTICE_TXT_FILE = r"C:\Dispatch_System\notice.txt"
